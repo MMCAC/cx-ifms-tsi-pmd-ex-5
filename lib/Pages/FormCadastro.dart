@@ -1,69 +1,97 @@
 import 'package:flutter/material.dart';
 import '../Models/Filme.dart';
+import 'package:navegacao/Services/FilmeService.dart';
 
+class FormCadastro extends StatefulWidget {
+  final Filme? filme;
 
-class FormCadastro extends StatefulWidget{
+  FormCadastro({this.filme}); // Se vier um filme, é edição
+
   @override
-  State<StatefulWidget> createState() {
-    return _FormCadastro();
-  }
+  State<StatefulWidget> createState() => _FormCadastro();
 }
 
-class _FormCadastro extends State<FormCadastro>{
-  TextEditingController tituloController = TextEditingController();
-  GlobalKey<FormState> key = GlobalKey<FormState>();
+class _FormCadastro extends State<FormCadastro> {
+  final TextEditingController tituloController = TextEditingController();
+  final GlobalKey<FormState> key = GlobalKey<FormState>();
+
+  bool isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.filme != null) {
+      tituloController.text = widget.filme!.titulo ?? "";
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-       return Scaffold(
-      appBar: buildAppBar(),
-      body: buildBody(),
-      floatingActionButton: buildFAB(context)
-    );
-  }
-
-  Widget buildScaffold(context){
     return Scaffold(
-      appBar: buildAppBar(),
-      body: buildBody(),
-      floatingActionButton: buildFAB(context)
-    );
-  }
+      appBar: AppBar(
+        title: Text(widget.filme == null ? "Novo Filme" : "Editar Filme"),
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Form(
+          key: key,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: tituloController,
+                decoration: InputDecoration(labelText: "Título"),
+                validator: (text) {
+                  if (text == null || text.isEmpty) {
+                    return "Título é obrigatório";
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        child: isLoading ? CircularProgressIndicator(color: Colors.white) : Icon(Icons.check),
+        onPressed: isLoading
+            ? null
+            : () async {
+                if (key.currentState!.validate()) {
+                  setState(() => isLoading = true);
+                  try {
+                    final titulo = tituloController.text;
 
-  AppBar buildAppBar(){
-    return AppBar(title: Text("Novo Filme"),);
-  }
+                    if (widget.filme == null) {
+                      await criarFilme(Filme(titulo: titulo));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text("Filme cadastrado com sucesso"),
+                            backgroundColor: Colors.green),
+                      );
+                    } else {
+                      final filmeAtualizado = Filme(
+                        id: widget.filme!.id,
+                        titulo: titulo,
+                      );
+                      await atualizarFilme(filmeAtualizado);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text("Filme atualizado com sucesso"),
+                            backgroundColor: Colors.blue),
+                      );
+                    }
 
-  Widget buildBody(){
-    return Form( 
-      key: key ,
-      child: Column(
-        children: [
-          TextFormField(
-            controller: tituloController,
-            decoration: InputDecoration(labelText: "Título"),
-            validator: (text){
-              if(text == null || text.isEmpty){
-                return "Título é obrigatório"; 
-              }
-              return null;
-            }
-          )
-        ],
+                    Navigator.pop(context, true);
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("Erro ao salvar filme")),
+                    );
+                  } finally {
+                    setState(() => isLoading = false);
+                  }
+                }
+              },
       ),
     );
-  }
-
-  Widget buildFAB(context){
-    Filme filme = Filme();
-    return FloatingActionButton(onPressed: () {
-      if(key.currentState!.validate()){
-         filme.titulo = tituloController.text; 
-         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Filme Cadastrado"))
-         ); 
-         Navigator.pop(context, filme);
-      }
-    }, child: Icon(Icons.check),);
   }
 }
