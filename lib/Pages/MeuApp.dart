@@ -96,7 +96,7 @@ class _MeuApp extends State<MeuApp> {
     );
   }
 
-  // 🔵 Método para editar
+
   Future<void> _editarFilme(BuildContext context, Filme filme) async {
     final TextEditingController controller =
         TextEditingController(text: filme.titulo);
@@ -143,7 +143,7 @@ class _MeuApp extends State<MeuApp> {
     }
   }
 
-  // 🔴 Método para deletar
+
   Future<void> _deletarFilme(int id) async {
     try {
       await deletarFilme(id);
